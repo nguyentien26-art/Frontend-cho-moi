@@ -23,7 +23,7 @@ export default function CreatePost() {
             {/* Khu vực tải ảnh */}
             <div>
               <label className="block font-semibold text-gray-700 mb-2">Hình ảnh sản phẩm</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-10 text-center hover:bg-orange-50 hover:border-orange-300 transition cursor-pointer">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-10 text-center hover:bg-yellow-50 hover:border-yellow-400 transition cursor-pointer">
                 <span className="text-5xl mb-3 block">📸</span>
                 <p className="text-gray-600 font-medium">Bấm vào đây để tải ảnh lên</p>
                 <p className="text-gray-400 text-sm mt-1">Hỗ trợ định dạng JPG, PNG (Tối đa 6 ảnh)</p>
@@ -35,11 +35,11 @@ export default function CreatePost() {
               <label className="block font-semibold text-gray-700 mb-2">
                 Tiêu đề tin đăng <span className="text-red-500">*</span>
               </label>
-              <input 
-                type="text" 
-                required 
-                placeholder="Ví dụ: Xe Honda Wave Alpha 2021 chính chủ" 
-                className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal" 
+              <input
+                type="text"
+                required
+                placeholder="Ví dụ: Xe Honda Wave Alpha 2021 chính chủ"
+                className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
               />
             </div>
 
@@ -49,7 +49,7 @@ export default function CreatePost() {
                 <label className="block font-semibold text-gray-700 mb-2">
                   Danh mục <span className="text-red-500">*</span>
                 </label>
-                <select required className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white cursor-pointer transition text-gray-900 font-medium">
+                <select required className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 bg-white cursor-pointer transition text-gray-900 font-medium">
                   <option value="" className="text-gray-500">-- Chọn danh mục --</option>
                   <option value="bat-dong-san">Bất động sản</option>
                   <option value="xe-co">Xe cộ</option>
@@ -62,11 +62,11 @@ export default function CreatePost() {
                 <label className="block font-semibold text-gray-700 mb-2">
                   Giá (VNĐ) <span className="text-red-500">*</span>
                 </label>
-                <input 
-                  type="number" 
-                  required 
-                  placeholder="Ví dụ: 15000000" 
-                  className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal" 
+                <input
+                  type="number"
+                  required
+                  placeholder="Ví dụ: 15000000"
+                  className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
                 />
               </div>
             </div>
@@ -90,19 +90,19 @@ export default function CreatePost() {
               <label className="block font-semibold text-gray-700 mb-2">
                 Mô tả chi tiết <span className="text-red-500">*</span>
               </label>
-              <textarea 
-                required 
-                rows="6" 
-                placeholder="Mô tả tình trạng, xuất xứ, thời gian sử dụng, phụ kiện đi kèm..." 
-                className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition resize-y text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
+              <textarea
+                required
+                rows="6"
+                placeholder="Mô tả tình trạng, xuất xứ, thời gian sử dụng, phụ kiện đi kèm..."
+                className="w-full border border-gray-300 rounded-md px-4 py-3 outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition resize-y text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
               ></textarea>
             </div>
 
             {/* Nút Submit */}
             <div className="pt-2">
-              <button 
-                type="submit" 
-                className="w-full bg-orange-500 text-white font-bold text-lg py-4 rounded-md hover:bg-orange-600 transition shadow-md active:transform active:scale-[0.99]"
+              <button
+                type="submit"
+                className="w-full bg-yellow-400 text-gray-800 font-bold text-lg py-4 rounded-md hover:bg-yellow-500 transition shadow-md active:transform active:scale-[0.99]"
               >
                 🚀 Đăng tin ngay
               </button>

@@ -38,7 +38,7 @@ export default async function ProductDetail({ params }) {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800">Oops! Không tìm thấy sản phẩm</h2>
             <p className="text-gray-500 mt-2">Sản phẩm này có thể đã bị xóa hoặc lỗi kết nối.</p>
-            <a href="/" className="inline-block mt-4 text-orange-500 font-semibold underline">Quay lại trang chủ</a>
+            <a href="/" className="inline-block mt-4 text-yellow-500 font-semibold underline">Quay lại trang chủ</a>
           </div>
         </div>
         <Footer />
@@ -76,11 +76,11 @@ export default async function ProductDetail({ params }) {
             <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">
               {product.title}
             </h1>
-            <p className="text-3xl font-extrabold text-orange-600 mb-6">
+            <p className="text-3xl font-extrabold text-yellow-600 mb-6">
               {formattedPrice}
             </p>
             
-            <div className="bg-orange-50 p-4 rounded-lg mb-6 border border-orange-100">
+            <div className="bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-200">
               <p className="font-bold text-gray-800 mb-2 flex items-center gap-2">
                 📝 Mô tả sản phẩm
               </p>
@@ -97,6 +97,9 @@ export default async function ProductDetail({ params }) {
               
               <button className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2">
                 <span>📞</span> Liên hệ người bán
+              </button>
+              <button className="w-full bg-yellow-400 text-gray-800 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition flex items-center justify-center gap-2">
+                <span>❤️</span> Yêu thích
               </button>
             </div>
           </div>

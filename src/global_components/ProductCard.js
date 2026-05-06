@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 export default function ProductCard({ product }) {
   // Xử lý đường dẫn ảnh từ Strapi, nếu không có ảnh thì hiển thị ảnh mặc định
-  const imageUrl = product.image?.url 
-    ? `http://localhost:1337${product.image.url}` 
+  const imageUrl = product.image?.[0]?.url 
+    ? `http://localhost:1337${product.image[0].url}` 
     : 'https://via.placeholder.com/400x300?text=Chua+co+anh';
 
   // Format giá tiền sang chuẩn VNĐ
@@ -20,7 +20,7 @@ export default function ProductCard({ product }) {
         <div className="aspect-video relative overflow-hidden bg-gray-100">
           <img 
             src={imageUrl} 
-            alt={product.title} 
+            alt={product.name} 
             className="w-full h-full object-cover"
           />
         </div>
@@ -28,7 +28,7 @@ export default function ProductCard({ product }) {
         {/* Khu vực thông tin */}
         <div className="p-3 md:p-4 flex flex-col flex-grow">
           <h3 className="font-medium text-gray-800 text-sm md:text-base line-clamp-2 mb-2">
-            {product.title}
+            {product.name}
           </h3>
           <p className="font-bold text-orange-500 text-base md:text-lg mt-auto">
             {formattedPrice}
