@@ -1,110 +1,122 @@
 import Header from '@/global_components/Header';
 import Footer from '@/global_components/Footer';
+import ProductCard from '@/global_components/ProductCard'; // Tận dụng lại component có sẵn
+import { mockProducts } from '@/lib/data';
 
-async function getSingleProduct(documentId) {
-  try {
-    const res = await fetch(`http://localhost:1337/api/products/${documentId}?populate=*`, {
-      cache: 'no-store'
-    });
-    
-    if (!res.ok) {
-      console.error("Lỗi từ Strapi:", res.statusText);
-      return null;
-    }
-
-    const json = await res.json();
-    // Strapi v5 trả về đối tượng nằm trực tiếp trong json.data
-    return json.data;
-  } catch (error) {
-    console.error("Lỗi fetch:", error);
-    return null;
-  }
-}
-
-// Next.js 15 yêu cầu params phải được awaited
 export default async function ProductDetail({ params }) {
-  // BƯỚC QUAN TRỌNG: Await params trước khi lấy id
-  const resolvedParams = await params;
-  const id = resolvedParams.id;
+  const { id } = await params;
+  
+  // 1. Tìm sản phẩm hiện tại
+  const product = mockProducts.find(p => p.documentId === id);
 
-  const product = await getSingleProduct(id);
-
-  // Nếu không tìm thấy sản phẩm
   if (!product) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800">Oops! Không tìm thấy sản phẩm</h2>
-            <p className="text-gray-500 mt-2">Sản phẩm này có thể đã bị xóa hoặc lỗi kết nối.</p>
-            <a href="/" className="inline-block mt-4 text-yellow-500 font-semibold underline">Quay lại trang chủ</a>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+    return <div className="p-10 text-center">Sản phẩm không tồn tại.</div>;
   }
 
-  // Xử lý ảnh
-  const imageUrl = product.image?.url 
-    ? `http://localhost:1337${product.image.url}` 
-    : 'https://via.placeholder.com/800x600?text=Khong+co+anh';
+  // 2. Lấy danh sách tin đăng tương tự (Bỏ qua sản phẩm hiện tại)
+  const similarProducts = mockProducts
+    .filter(p => p.documentId !== id)
+    .slice(0, 4); // Lấy tối đa 4 tin
 
-  // Format giá
+  const imageUrl = product.image?.url.startsWith('http') 
+    ? product.image.url 
+    : `http://localhost:1337${product.image.url}`;
+
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
     style: 'currency', currency: 'VND'
   }).format(product.price);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header />
-      <main className="max-w-5xl mx-auto py-6 px-4 w-full flex-grow">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      
+      <main className="max-w-6xl mx-auto py-6 px-4 w-full flex-grow">
+        <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* Ảnh bên trái */}
-          <div className="rounded-lg overflow-hidden border bg-gray-50 flex items-center justify-center">
-            <img 
-              src={imageUrl} 
-              alt={product.title} 
-              className="w-full h-auto object-contain max-h-[500px]" 
-            />
-          </div>
-
-          {/* Thông tin bên phải */}
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">
-              {product.title}
-            </h1>
-            <p className="text-3xl font-extrabold text-yellow-600 mb-6">
-              {formattedPrice}
-            </p>
-            
-            <div className="bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-200">
-              <p className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-                📝 Mô tả sản phẩm
-              </p>
-              <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-                {product.description}
-              </p>
+          {/* --- CỘT TRÁI (70%) --- */}
+          <div className="lg:w-2/3 space-y-4">
+            <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+              <div className="relative h-[350px] md:h-[450px] bg-white flex items-center justify-center">
+                <img 
+                  src={imageUrl} 
+                  alt={product.title} 
+                  className="max-h-full max-w-full object-contain p-2"
+                />
+              </div>
             </div>
 
-            <div className="mt-auto pt-6 border-t border-gray-100 space-y-4">
-              <div className="flex items-center text-gray-600">
-                <span className="text-xl mr-2">📍</span>
-                <span className="font-medium">{product.location || 'Toàn quốc'}</span>
-              </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 leading-tight">
+                {product.title}
+              </h1>
+              <p className="text-2xl font-bold text-orange-600 mb-4">{formattedPrice}</p>
               
-              <button className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2">
-                <span>📞</span> Liên hệ người bán
-              </button>
-              <button className="w-full bg-yellow-400 text-gray-800 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition flex items-center justify-center gap-2">
-                <span>❤️</span> Yêu thích
-              </button>
+              <div className="flex flex-wrap items-center text-sm text-gray-500 gap-y-2 border-t pt-4">
+                <span className="mr-4 flex items-center gap-1">📍 {product.location}</span>
+                <span className="flex items-center gap-1">🕒 Mới đăng</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="font-bold text-lg mb-4 text-gray-800 border-b pb-2">Mô tả chi tiết</h3>
+              <div className="text-gray-700 whitespace-pre-line leading-relaxed text-sm md:text-base">
+                {product.description}
+              </div>
+            </div>
+          </div>
+
+          {/* --- CỘT PHẢI (30%) --- */}
+          <div className="lg:w-1/3 space-y-4">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">
+                  {product.seller?.name?.charAt(0) || "C"}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-800">{product.seller?.name || "Cửa hàng Demo"}</h4>
+                  <p className="text-xs text-gray-500">Phản hồi trong vài phút</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <a 
+                  href={`tel:${product.seller?.phone}`}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition flex items-center justify-center gap-2"
+                >
+                  📞 {product.seller?.phone || "Gọi điện ngay"}
+                </a>
+                <button className="w-full border-2 border-orange-500 text-orange-600 py-3 rounded-lg font-bold hover:bg-orange-50 transition">
+                  NHẮN TIN CHAT
+                </button>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span>Đánh giá:</span>
+                  <span className="text-yellow-500">⭐⭐⭐⭐⭐</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* --- PHẦN TIN ĐĂNG TƯƠNG TỰ --- */}
+        <section className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">
+              Tin đăng tương tự
+            </h2>
+            <div className="h-1 flex-grow mx-4 bg-gray-200 rounded-full hidden md:block"></div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {similarProducts.map((item) => (
+              <ProductCard key={item.documentId} product={item} />
+            ))}
+          </div>
+        </section>
       </main>
+
       <Footer />
     </div>
   );
