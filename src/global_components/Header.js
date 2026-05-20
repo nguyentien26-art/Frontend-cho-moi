@@ -30,6 +30,7 @@ export default function Header() {
     }
   };
 
+<<<<<<< HEAD
   const { cartItems } = useCart();
   const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -65,6 +66,40 @@ export default function Header() {
         </div>
       </div>
 
+=======
+  return (
+    <header className="bg-yellow-400 sticky top-0 z-50 shadow-md">
+      {/* Top Bar */}
+      <div className="bg-yellow-400 px-4 py-2 border-b border-yellow-500">
+        <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
+          <div className="flex gap-6 text-gray-700">
+            <span className="hover:text-gray-900 cursor-pointer">Dành cho người bán ▼</span>
+            <span className="hover:text-gray-900 cursor-pointer">Chợ MỌI</span>
+            <span className="hover:text-gray-900 cursor-pointer">Xe cộ</span>
+            <span className="hover:text-gray-900 cursor-pointer">Bất động sản</span>
+            <span className="hover:text-gray-900 cursor-pointer">Đồ Điện Tử</span>
+          </div>
+          <div className="flex gap-4">
+            <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
+            <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
+            <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="hover:text-gray-900 cursor-pointer font-semibold"
+            >
+              Đăng nhập
+            </button>
+            <button
+              onClick={() => router.push('/auth/signup')}
+              className="bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
+            >
+              Đăng nhập
+            </button>
+          </div>
+        </div>
+      </div>
+
+>>>>>>> e796dd594c2bf200056cfcd5b396780ccb625f00
       {/* Main Header */}
       <div className="px-4 py-3">
         <div className="max-w-7xl mx-auto">
@@ -138,6 +173,7 @@ export default function Header() {
           </div>
 
           {/* Location Bar */}
+<<<<<<< HEAD
           {/* <div className="flex items-center gap-4 text-sm text-gray-700">
             <span className="flex items-center gap-2">
               📍 Chọn khu vực ▼
@@ -148,6 +184,13 @@ export default function Header() {
           <nav>
               <Link href="/cart">🛒 Giỏ hàng ({totalQty})</Link>
           </nav>
+=======
+          <div className="flex items-center gap-4 text-sm text-gray-700">
+            <span className="flex items-center gap-2">
+              📍 Chọn khu vực ▼
+            </span>
+          </div>
+>>>>>>> e796dd594c2bf200056cfcd5b396780ccb625f00
         </div>
       </div>
     </header>
