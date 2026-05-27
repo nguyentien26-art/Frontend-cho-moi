@@ -47,6 +47,15 @@
     },
     "type": {
       "type": "string"
+    },
+    "productStatus": {
+      "type": "enumeration",
+      "default": "     pending (chờ duyệt)",
+      "enum": [
+        "     pending (chờ duyệt)",
+        "     approved (đã duyệt)",
+        "     rejected (đã từ chối)"
+      ]
     }
   }
 }
