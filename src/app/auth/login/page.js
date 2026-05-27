@@ -142,7 +142,7 @@ export default function LoginPage() {
           {/* Back Link */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/')}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
               ← Quay lại

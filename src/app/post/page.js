@@ -46,14 +46,14 @@ export default function CreatePost() {
     'Đồ ăn, thực phẩm, và các loại khác': 'do-an, thuc-pham, va-cac-loai-khac',
   };
   const [selectedImages, setSelectedImages] = useState([]);
-
+  const [isChecking, setIsChecking] = useState(true);
   useEffect(() => {
     const token = getAuthToken();
     if (!token || !canPost()) {
       router.push('/auth/login');
+      return;
     }
 
-    // Tự động lấy tên người bán từ user đăng nhập
     const userData = getUserData();
     if (userData) {
       setFormData(prev => ({
@@ -61,7 +61,9 @@ export default function CreatePost() {
         seller: userData.username || userData.email,
       }));
     }
-  }, []);
+
+    setIsChecking(false); // Đã kiểm tra xong và hợp lệ!
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

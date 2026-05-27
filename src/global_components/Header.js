@@ -183,21 +183,32 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            {isMounted && userRole === 'moderator' ? (
+            <div className="flex items-center gap-2">
+              {/* Nút Giỏ Hàng Điều Hướng Đến /cart */}
               <button
-                onClick={() => router.push('/moderation')}
-                className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
+                onClick={() => router.push('/cart')}
+                className="p-2 text-2xl hover:bg-yellow-500 rounded-full transition flex items-center justify-center"
+                title="Giỏ hàng của bạn"
               >
-                📋 Kiểm duyệt tin
+                🛍️ Giỏ Hàng
               </button>
-            ) : isMounted ? (
-              <button
-                onClick={() => router.push('/post')}
-                className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
-              >
-                + Đăng tin
-              </button>
-            ) : null}
+
+              {isMounted && userRole === 'moderator' ? (
+                <button
+                  onClick={() => router.push('/moderation')}
+                  className="bg-yellow-500 text-gray-700 px-5 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-2 white-space-nowrap"
+                >
+                  📋 Kiểm duyệt tin
+                </button>
+              ) : isMounted ? (
+                <button
+                  onClick={() => router.push('/post')}
+                  className="bg-yellow-500 text-gray-700 px-5 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-2 white-space-nowrap"
+                >
+                  + Đăng tin
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {/* Location Bar */}
