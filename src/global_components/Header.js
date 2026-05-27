@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCart } from "@/context/CartContext";
-import Link from "next/link";
+import { getAuthToken, getUserData, removeAuthToken, removeUserData, getUserRole, canModerate } from '@/lib/strapiAuth';
 
 export default function Header() {
   const router = useRouter();
@@ -11,6 +10,35 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState('Danh mục');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const token = getAuthToken();
+    const userData = getUserData();
+    const role = getUserRole();
+    if (token && userData) {
+      setIsLoggedIn(true);
+      setUser(userData);
+      setUserRole(role);
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+      setUserRole(null);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    removeAuthToken();
+    removeUserData();
+    setIsLoggedIn(false);
+    setUser(null);
+    setUserRole(null);
+    router.push('/');
+  };
 
   const categories = [
     'Danh mục',
@@ -30,10 +58,6 @@ export default function Header() {
     }
   };
 
-<<<<<<< HEAD
-  const { cartItems } = useCart();
-  const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-
   return (
     <header className="bg-yellow-400 sticky top-0 z-50 shadow-md">
       {/* Top Bar */}
@@ -50,56 +74,51 @@ export default function Header() {
             <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
             <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
             <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
-            <button
-              onClick={() => router.push('/auth/login')}
-              className="hover:text-gray-900 cursor-pointer font-semibold"
-            >
-              Đăng nhập
-            </button>
-            <button
-              onClick={() => router.push('/auth/signup')}
-              className="bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
-            >
-              Đăng ký
-            </button>
+            {isLoggedIn ? (
+              <>
+                <span className="hover:text-gray-900 cursor-pointer font-semibold">
+                  Xin chào, {user?.username || user?.email}
+                  {userRole && (
+                    <span className="text-xs ml-2 bg-yellow-200 px-2 py-1 rounded">
+                      {userRole === 'moderator' ? 'Kiểm duyệt' : 'Người dùng'}
+                    </span>
+                  )}
+                </span>
+                {userRole === 'moderator' && (
+                  <button
+                    onClick={() => router.push('/moderation')}
+                    className="hover:text-gray-900 cursor-pointer font-semibold"
+                  >
+                    📋 Kiểm duyệt
+                  </button>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="hover:text-gray-900 cursor-pointer font-semibold"
+                >
+                  Đăng xuất
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push('/auth/login')}
+                  className="hover:text-gray-900 cursor-pointer font-semibold"
+                >
+                  Đăng nhập
+                </button>
+                <button
+                  onClick={() => router.push('/auth/signup')}
+                  className="bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
+                >
+                  Đăng ký
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-=======
-  return (
-    <header className="bg-yellow-400 sticky top-0 z-50 shadow-md">
-      {/* Top Bar */}
-      <div className="bg-yellow-400 px-4 py-2 border-b border-yellow-500">
-        <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
-          <div className="flex gap-6 text-gray-700">
-            <span className="hover:text-gray-900 cursor-pointer">Dành cho người bán ▼</span>
-            <span className="hover:text-gray-900 cursor-pointer">Chợ MỌI</span>
-            <span className="hover:text-gray-900 cursor-pointer">Xe cộ</span>
-            <span className="hover:text-gray-900 cursor-pointer">Bất động sản</span>
-            <span className="hover:text-gray-900 cursor-pointer">Đồ Điện Tử</span>
-          </div>
-          <div className="flex gap-4">
-            <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
-            <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
-            <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
-            <button
-              onClick={() => router.push('/auth/login')}
-              className="hover:text-gray-900 cursor-pointer font-semibold"
-            >
-              Đăng nhập
-            </button>
-            <button
-              onClick={() => router.push('/auth/signup')}
-              className="bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
-            >
-              Đăng nhập
-            </button>
-          </div>
-        </div>
-      </div>
-
->>>>>>> e796dd594c2bf200056cfcd5b396780ccb625f00
       {/* Main Header */}
       <div className="px-4 py-3">
         <div className="max-w-7xl mx-auto">
@@ -164,33 +183,29 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <button
-              onClick={() => router.push('/create')}
-              className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
-            >
-              + Đăng tin
-            </button>
+            {isMounted && userRole === 'moderator' ? (
+              <button
+                onClick={() => router.push('/moderation')}
+                className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
+              >
+                📋 Kiểm duyệt tin
+              </button>
+            ) : isMounted ? (
+              <button
+                onClick={() => router.push('/post')}
+                className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
+              >
+                + Đăng tin
+              </button>
+            ) : null}
           </div>
 
           {/* Location Bar */}
-<<<<<<< HEAD
-          {/* <div className="flex items-center gap-4 text-sm text-gray-700">
-            <span className="flex items-center gap-2">
-              📍 Chọn khu vực ▼
-            </span>
-          </div> */}
-
-          {/* Cart */}
-          <nav>
-              <Link href="/cart">🛒 Giỏ hàng ({totalQty})</Link>
-          </nav>
-=======
           <div className="flex items-center gap-4 text-sm text-gray-700">
             <span className="flex items-center gap-2">
               📍 Chọn khu vực ▼
             </span>
           </div>
->>>>>>> e796dd594c2bf200056cfcd5b396780ccb625f00
         </div>
       </div>
     </header>

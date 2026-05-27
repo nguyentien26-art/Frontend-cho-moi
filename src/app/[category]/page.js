@@ -117,21 +117,24 @@ export default function CategoryPage() {
         `http://localhost:1337/api/products?filters[categories][slug][$eq]=${mainCategory}&populate=*`,
         { cache: 'no-store' }
       );
-      
+
       if (!res.ok) {
         setProducts([]);
         return;
       }
-      
+
       const json = await res.json();
       let allProducts = json.data || [];
-      
+
+      // Filter client-side: chỉ hiển thị sản phẩm đã được duyệt (productStatus = '     approved (đã duyệt)')
+      allProducts = allProducts.filter(p => p.productStatus === '     approved (đã duyệt)');
+
       // Nếu là sub-category, filter theo type
       if (isSubCategory && subCategory) {
         const typeName = typeMap[subCategory];
         allProducts = allProducts.filter(p => p.type === typeName);
       }
-      
+
       setProducts(allProducts);
     } catch (error) {
       console.error("Lỗi:", error);

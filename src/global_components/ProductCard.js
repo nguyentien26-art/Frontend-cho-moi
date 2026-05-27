@@ -4,9 +4,9 @@ import { useCart } from "@/context/CartContext";
 
 export default function ProductCard({ product }) {
   // Xử lý đường dẫn ảnh từ Strapi, nếu không có ảnh thì hiển thị ảnh mặc định
-  const imageUrl = product.image?.[0]?.url 
-    ? `http://localhost:1337${product.image[0].url}` 
-    : 'https://via.placeholder.com/400x300?text=Chua+co+anh';
+  const imageUrl = product.image?.[0]?.url
+    ? `http://localhost:1337${product.image[0].url}`
+    : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="20" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EChưa có ảnh%3C/text%3E%3C/svg%3E';
 
   // Format giá tiền sang chuẩn VNĐ
   const formattedPrice = new Intl.NumberFormat('vi-VN', {

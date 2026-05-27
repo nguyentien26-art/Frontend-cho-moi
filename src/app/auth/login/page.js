@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { loginUser, saveAuthToken, saveUserData } from '@/lib/strapiAuth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,20 +18,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // TODO: Integrate with Strapi authentication
-      console.log('Login attempt:', { email, password });
-      // const response = await fetch('http://localhost:1337/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password })
-      // });
+      const data = await loginUser({
+        email: email,
+        password: password,
+      });
 
-      // For now, just redirect to home
-      setTimeout(() => {
-        router.push('/');
-      }, 500);
+      // Save token and user data
+      saveAuthToken(data.jwt);
+      saveUserData(data.user);
+
+      // Redirect to home
+      router.push('/');
     } catch (err) {
-      setError('Đăng nhập thất bại. Vui lòng thử lại.');
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
       console.error(err);
     } finally {
       setLoading(false);
