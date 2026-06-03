@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "topup_requests",
+  "info": {
+    "singularName": "topup-request",
+    "pluralName": "topup-requests",
+    "displayName": "TopupRequest"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "amount": {
+      "type": "integer"
+    },
+    "requestStatus": {
+      "type": "enumeration",
+      "default": "pending",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "transactionId": {
+      "type": "string"
+    },
+    "note": {
+      "type": "text"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}
