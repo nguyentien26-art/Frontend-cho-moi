@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, getUserData, removeAuthToken, removeUserData, getUserRole, canModerate } from '@/lib/strapiAuth';
+import { getAuthToken, getUserData, removeAuthToken, removeUserData, getUserRole, canModerate, getMyProfile } from '@/lib/strapiAuth';
 
 export default function Header() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [balance, setBalance] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -24,10 +25,23 @@ export default function Header() {
       setIsLoggedIn(true);
       setUser(userData);
       setUserRole(role);
+      
+      // Fetch latest profile to get real-time balance and role
+      getMyProfile().then(profile => {
+        if (profile) {
+          setBalance(profile.balance !== undefined ? profile.balance : 0);
+          // Sync storage
+          const updatedUser = { ...userData, balance: profile.balance };
+          localStorage.setItem('strapi_user', JSON.stringify(updatedUser));
+        }
+      }).catch(err => {
+        console.error('Error fetching profile in Header:', err);
+      });
     } else {
       setIsLoggedIn(false);
       setUser(null);
       setUserRole(null);
+      setBalance(0);
     }
   }, []);
 
@@ -37,6 +51,7 @@ export default function Header() {
     setIsLoggedIn(false);
     setUser(null);
     setUserRole(null);
+    setBalance(0);
     router.push('/');
   };
 
@@ -70,36 +85,46 @@ export default function Header() {
             <span className="hover:text-gray-900 cursor-pointer">Bất động sản</span>
             <span className="hover:text-gray-900 cursor-pointer">Đồ Điện Tử</span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
             <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
             <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
             {isLoggedIn ? (
               <>
-                <span className="hover:text-gray-900 cursor-pointer font-semibold">
+                <span className="hover:text-gray-900 cursor-pointer font-semibold flex items-center gap-1">
                   Xin chào, {user?.username || user?.email}
                   {userRole && (
-                    <span className="text-xs ml-2 bg-yellow-200 px-2 py-1 rounded">
+                    <span className="text-xs bg-yellow-200 px-2 py-0.5 rounded text-gray-800">
                       {userRole === 'moderator' ? 'Kiểm duyệt' : 'Người dùng'}
                     </span>
                   )}
                 </span>
+                {userRole !== 'moderator' && userRole !== 'admin' && (
+                  <span 
+                    onClick={() => router.push('/wallet')}
+                    className="bg-black text-yellow-400 hover:bg-gray-800 px-2 py-1 rounded cursor-pointer font-bold flex items-center gap-1 transition"
+                    title="Ví cá nhân"
+                  >
+                    🪙 {(balance ?? 0).toLocaleString('vi-VN')}đ
+                  </span>
+                )}
                 {userRole === 'moderator' && (
                   <button
                     onClick={() => router.push('/moderation')}
-                    className="hover:text-gray-900 cursor-pointer font-semibold"
+                    className="hover:text-gray-900 cursor-pointer font-semibold bg-white text-gray-800 px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 flex items-center gap-1"
                   >
                     📋 Kiểm duyệt
                   </button>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="hover:text-gray-900 cursor-pointer font-semibold"
+                  className="hover:text-gray-900 cursor-pointer font-semibold text-gray-700 hover:underline ml-2"
                 >
                   Đăng xuất
                 </button>
               </>
             ) : (
+
               <>
                 <button
                   onClick={() => router.push('/auth/login')}

@@ -305,3 +305,172 @@ export async function updateProduct(productId, productData) {
     throw error;
   }
 }
+
+export async function getMyProfile() {
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/users/me?populate=role`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Lỗi khi tải thông tin tài khoản');
+    }
+    return data;
+  } catch (error) {
+    console.error('Get profile error:', error);
+    throw error;
+  }
+}
+
+export async function createTopupRequest(amount, transactionId, note) {
+  const token = getAuthToken();
+  const user = getUserData();
+  if (!token || !user) {
+    throw new Error('Bạn chưa đăng nhập.');
+  }
+
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/topup-requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        data: {
+          amount: parseInt(amount, 10),
+          transactionId,
+          note,
+          users_permissions_user: user.documentId || user.id,
+          requestStatus: 'pending',
+          publishedAt: new Date().toISOString(), // auto-publish in Strapi v5
+        },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Gửi yêu cầu nạp tiền thất bại.');
+    }
+    return data;
+  } catch (error) {
+    console.error('Create topup request error:', error);
+    throw error;
+  }
+}
+
+export async function getTopupRequests(userId) {
+  const token = getAuthToken();
+  try {
+    // Strapi v5 format: sort=field:asc or sort=field:desc
+    console.log('Fetching all topup-requests for user:', userId);
+    
+    const response = await fetch(`${STRAPI_URL}/api/topup-requests?sort=createdAt:desc&pagination[limit]=100`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    
+    console.log('API Response status:', response.status);
+    console.log('API Response data:', data);
+    
+    if (!response.ok) {
+      console.error('API Error Response:', data);
+      throw new Error(data.error?.message || `Lỗi tải danh sách nạp tiền: ${response.status}`);
+    }
+    
+    // Filter client-side cho safety
+    if (data.data && Array.isArray(data.data)) {
+      const filtered = data.data.filter(item => {
+        const itemUserId = item.users_permissions_user?.id || item.users_permissions_user;
+        return itemUserId === userId || itemUserId === parseInt(userId);
+      });
+      return { ...data, data: filtered };
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Get topup requests error:', error);
+    throw error;
+  }
+}
+
+export async function updateTopupRequestStatus(documentId, status) {
+  const token = getAuthToken();
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/topup-requests/${documentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        data: {
+          requestStatus: status,
+        },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Cập nhật trạng thái thất bại');
+    }
+    return data;
+  } catch (error) {
+    console.error('Update topup status error:', error);
+    throw error;
+  }
+}
+
+export async function adjustUserBalance(userDocumentId, amount) {
+  const token = getAuthToken();
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/topup-requests/adjust-balance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        userDocumentId,
+        amount: parseInt(amount, 10),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Điều chỉnh số dư thất bại');
+    }
+    return data;
+  } catch (error) {
+    console.error('Adjust user balance error:', error);
+    throw error;
+  }
+}
+
+export async function getAllUsers() {
+  const token = getAuthToken();
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/users?populate=role`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Lỗi khi tải danh sách người dùng');
+    }
+    return data;
+  } catch (error) {
+    console.error('Get all users error:', error);
+    throw error;
+  }
+}
+
