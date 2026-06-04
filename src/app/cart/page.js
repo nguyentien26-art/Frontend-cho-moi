@@ -1,112 +1,80 @@
 "use client";
-
-import Header from '@/global_components/Header';
-import Footer from '@/global_components/Footer';
-import { useRouter } from 'next/navigation';
-// 1. Import dữ liệu cứng mockCartdata từ file lib của bạn
-import { mockCartdata } from "@/lib/CartItems"; 
+import { useCart } from "@/context/CartContext";
 
 export default function CartPage() {
-  const router = useRouter();
+  const { cartItems, removeFromCart } = useCart();
 
-  // 2. Sử dụng trực tiếp dữ liệu cứng từ file lib
-  const cartItems = mockCartdata || []; 
-
-  // 3. Tính tổng tiền thanh toán dựa trên dữ liệu cứng
-  const totalPrice = cartItems.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0);
+  const totalPrice = cartItems?.reduce((acc, item) => acc + item.price * item.quantity, 0) || 0;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header />
+    // max-w-4xl và mx-auto giúp gom giỏ hàng vào giữa màn hình
+    <div className="max-w-4xl mx-auto p-6 lg:p-10">
+      <h1 className="text-3xl font-bold mb-8 border-b border-gray-600 pb-4">
+        Giỏ hàng của bạn
+      </h1>
       
-      <main className="max-w-4xl mx-auto my-8 px-4 flex-grow w-full">
-        {/* NÚT QUAY LẠI NẰM Ở ĐẦU TRANG GIỎ HÀNG */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-black font-semibold mb-4 transition group"
-        >
-          <span className="transform group-hover:-translate-x-1 transition-transform">←</span> 
-          Quay lại trang trước
-        </button>
-
-        <div className="bg-white p-6 md:p-10 rounded-lg shadow-sm border border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-2">
-            🛒 Giỏ hàng của bạn
-          </h1>
-
-          {cartItems.length === 0 ? (
-            /* TRẠNG THÁI GIỎ HÀNG TRỐNG */
-            <div className="text-center py-10">
-              <span className="text-6xl mb-4 block">🛍️</span>
-              <p className="text-gray-500 mb-6 text-lg">Giỏ hàng của bạn đang trống.</p>
-              <button 
-                onClick={() => router.push('/')}
-                className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 font-bold px-6 py-3 rounded-md transition shadow-sm"
-              >
-                Tiếp tục mua sắm
-              </button>
-            </div>
-          ) : (
-            /* TRẠNG THÁI CÓ SẢN PHẨM (HIỂN THỊ DỮ LIỆU CỨNG) */
-            <div className="space-y-6">
-              <p className="text-gray-600 font-medium">Bạn đang có {cartItems.length} sản phẩm trong giỏ hàng.</p>
-              
-              <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm"
-                  >
-                    {/* Cột trái: Ảnh và Tên sản phẩm */}
-                    <div className="flex items-center gap-5 w-full sm:w-1/2">
-                      <img 
-                        src={item.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&q=80"} 
-                        alt={item.name} 
-                        className="w-20 h-20 object-cover rounded-lg bg-white border border-gray-200"
-                      />
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-800 line-clamp-1">{item.name}</h2>
-                        <p className="text-gray-500 text-sm mt-0.5">Phân loại: {item.color || "Tiêu chuẩn"}</p>
-                        <p className="text-blue-600 font-medium mt-0.5">
-                          {(item.price || 0).toLocaleString('vi-VN')} đ
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Cột giữa: Số lượng */}
-                    <div className="mt-3 sm:mt-0 font-medium text-gray-600">
-                      Số lượng: <span className="text-gray-900 font-bold">{item.quantity}</span>
-                    </div>
-
-                    {/* Cột phải: Tổng tiền món đó & Nút Xóa giả lập */}
-                    <div className="mt-3 sm:mt-0 flex flex-col items-end gap-2 w-full sm:w-auto">
-                      <span className="font-bold text-red-600 text-lg">
-                        {((item.price || 0) * (item.quantity || 1)).toLocaleString('vi-VN')} đ
-                      </span>
-                      <button 
-                        onClick={() => alert(`Chức năng xóa item ${item.id} đang được kết nối với Context`)}
-                        className="text-sm px-3 py-1 bg-red-50 text-red-600 rounded-md hover:bg-red-600 hover:text-white transition-all duration-200 border border-red-200"
-                      >
-                        🗑️ Xóa
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Phần tính Tổng tiền cuối cùng */}
-              <div className="mt-8 bg-gray-50 p-6 rounded-xl flex justify-between items-center border border-gray-200 shadow-sm">
-                <span className="text-lg font-semibold text-gray-800">Tổng thanh toán:</span>
-                <span className="text-2xl font-bold text-red-600">
-                  {totalPrice.toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-            </div>
-          )}
+      {!cartItems || cartItems.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-xl text-gray-400">Giỏ hàng của bạn đang trống 😢</p>
         </div>
-      </main>
+      ) : (
+        <div className="space-y-5">
+          {cartItems.map((item) => (
+            // Thẻ bọc từng sản phẩm (Card)
+            <div 
+              key={item.id} 
+              className="flex flex-col sm:flex-row items-center justify-between bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700"
+            >
+              
+              {/* Cột trái: Ảnh và Tên sản phẩm */}
+              <div className="flex items-center gap-5 w-full sm:w-1/2">
+                <img 
+                  src={item.image} 
+                  alt={item.name} 
+                  className="w-24 h-24 object-cover rounded-lg bg-white"
+                />
+                <div>
+                  <h2 className="text-xl font-semibold text-white">{item.name}</h2>
+                  <p className="text-gray-400 text-sm mt-1">Phân loại: {item.color}</p>
+                  {/* toLocaleString('vi-VN') giúp format số tiền có dấu chấm */}
+                  <p className="text-blue-400 font-medium mt-1">
+                    {item.price.toLocaleString('vi-VN')} đ
+                  </p>
+                </div>
+              </div>
 
-      <Footer />
+              {/* Cột giữa: Số lượng */}
+              <div className="mt-4 sm:mt-0 font-medium text-lg text-gray-300">
+                Số lượng: <span className="text-white font-bold">{item.quantity}</span>
+              </div>
+
+              {/* Cột phải: Tổng tiền của món đó & Nút Xóa */}
+              <div className="mt-4 sm:mt-0 flex flex-col items-end gap-3 w-full sm:w-auto">
+                <span className="font-bold text-red-500 text-xl">
+                  {(item.price * item.quantity).toLocaleString('vi-VN')} đ
+                </span>
+                <button 
+                  onClick={() => removeFromCart(item.id)} 
+                  className="px-3 py-1 bg-red-500/10 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-all duration-300"
+                >
+                  🗑️ Xóa
+                </button>
+              </div>
+
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Phần tính Tổng tiền cuối cùng */}
+      {cartItems && cartItems.length > 0 && (
+        <div className="mt-10 bg-gray-800 p-6 rounded-xl flex justify-between items-center border border-gray-700 shadow-lg">
+          <span className="text-xl font-semibold text-white">Tổng thanh toán:</span>
+          <span className="text-3xl font-bold text-red-500">
+            {totalPrice.toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+      )}
     </div>
   );
 }

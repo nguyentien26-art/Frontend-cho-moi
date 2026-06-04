@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { registerUser } from '@/lib/strapiAuth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -32,16 +31,20 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const data = await registerUser({
-        username: fullName,
-        email: email,
-        password: password,
-      });
+      // TODO: Integrate with Strapi authentication
+      console.log('Signup attempt:', { fullName, email, password });
+      // const response = await fetch('http://localhost:1337/api/auth/register', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ username: fullName, email, password })
+      // });
 
-      // Redirect to login with success message
-      router.push('/auth/login?registered=true');
+      // For now, just redirect to login
+      setTimeout(() => {
+        router.push('/auth/login?registered=true');
+      }, 500);
     } catch (err) {
-      setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      setError('Đăng ký thất bại. Vui lòng thử lại.');
       console.error(err);
     } finally {
       setLoading(false);

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, getUserData, removeAuthToken, removeUserData, getUserRole, canModerate } from '@/lib/strapiAuth';
+import { useCart } from "@/context/CartContext";
+import Link from "next/link";
 
 export default function Header() {
   const router = useRouter();
@@ -10,35 +11,6 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState('Danh mục');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    const token = getAuthToken();
-    const userData = getUserData();
-    const role = getUserRole();
-    if (token && userData) {
-      setIsLoggedIn(true);
-      setUser(userData);
-      setUserRole(role);
-    } else {
-      setIsLoggedIn(false);
-      setUser(null);
-      setUserRole(null);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    removeAuthToken();
-    removeUserData();
-    setIsLoggedIn(false);
-    setUser(null);
-    setUserRole(null);
-    router.push('/');
-  };
 
   const categories = [
     'Danh mục',
@@ -58,6 +30,9 @@ export default function Header() {
     }
   };
 
+  const { cartItems } = useCart();
+  const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
   return (
     <header className="bg-yellow-400 sticky top-0 z-50 shadow-md">
       {/* Top Bar */}
@@ -74,47 +49,18 @@ export default function Header() {
             <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
             <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
             <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
-            {isLoggedIn ? (
-              <>
-                <span className="hover:text-gray-900 cursor-pointer font-semibold">
-                  Xin chào, {user?.username || user?.email}
-                  {userRole && (
-                    <span className="text-xs ml-2 bg-yellow-200 px-2 py-1 rounded">
-                      {userRole === 'moderator' ? 'Kiểm duyệt' : 'Người dùng'}
-                    </span>
-                  )}
-                </span>
-                {userRole === 'moderator' && (
-                  <button
-                    onClick={() => router.push('/moderation')}
-                    className="hover:text-gray-900 cursor-pointer font-semibold"
-                  >
-                    📋 Kiểm duyệt
-                  </button>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="hover:text-gray-900 cursor-pointer font-semibold"
-                >
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => router.push('/auth/login')}
-                  className="hover:text-gray-900 cursor-pointer font-semibold"
-                >
-                  Đăng nhập
-                </button>
-                <button
-                  onClick={() => router.push('/auth/signup')}
-                  className="bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
-                >
-                  Đăng ký
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="hover:text-gray-900 cursor-pointer font-semibold"
+            >
+              Đăng nhập
+            </button>
+            <button
+              onClick={() => router.push('/auth/signup')}
+              className="bg-black text-white px-3 py-1 rounded hover:bg-gray-800"
+            >
+              Đăng ký
+            </button>
           </div>
         </div>
       </div>
@@ -183,40 +129,25 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-2">
-              {/* Nút Giỏ Hàng Điều Hướng Đến /cart */}
-              <button
-                onClick={() => router.push('/cart')}
-                className="p-2 text-2xl hover:bg-yellow-500 rounded-full transition flex items-center justify-center"
-                title="Giỏ hàng của bạn"
-              >
-                🛍️ Giỏ Hàng
-              </button>
-
-              {isMounted && userRole === 'moderator' ? (
-                <button
-                  onClick={() => router.push('/moderation')}
-                  className="bg-yellow-500 text-gray-700 px-5 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-2 white-space-nowrap"
-                >
-                  📋 Kiểm duyệt tin
-                </button>
-              ) : isMounted ? (
-                <button
-                  onClick={() => router.push('/post')}
-                  className="bg-yellow-500 text-gray-700 px-5 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-2 white-space-nowrap"
-                >
-                  + Đăng tin
-                </button>
-              ) : null}
-            </div>
+            <button
+              onClick={() => router.push('/create')}
+              className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
+            >
+              + Đăng tin
+            </button>
           </div>
 
           {/* Location Bar */}
-          <div className="flex items-center gap-4 text-sm text-gray-700">
+          {/* <div className="flex items-center gap-4 text-sm text-gray-700">
             <span className="flex items-center gap-2">
               📍 Chọn khu vực ▼
             </span>
-          </div>
+          </div> */}
+
+          {/* Cart */}
+          <nav>
+              <Link href="/cart">🛒 Giỏ hàng ({totalQty})</Link>
+          </nav>
         </div>
       </div>
     </header>
