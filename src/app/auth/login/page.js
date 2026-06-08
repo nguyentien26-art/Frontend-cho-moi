@@ -18,16 +18,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await loginUser({
-        email: email,
-        password: password,
-      });
-
-      // Save token and user data
-      saveAuthToken(data.jwt);
-      saveUserData(data.user);
-
-      // Redirect to home
+      console.log('Login attempt:', { email, password });
+      
+      const response = await loginUser({ email, password });
+      
+      // Lưu token và user data
+      saveAuthToken(response.jwt);
+      saveUserData(response.user);
+      
+      console.log('Login successful:', response.user);
+      
+      // Redirect về home page
       router.push('/');
     } catch (err) {
       setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');

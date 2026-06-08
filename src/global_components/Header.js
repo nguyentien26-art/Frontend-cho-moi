@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, getUserData, removeAuthToken, removeUserData, getUserRole, canModerate, getMyProfile } from '@/lib/strapiAuth';
+import { useCart } from "@/context/CartContext";
+import Link from "next/link";
+import { getUserData, getAuthToken, removeAuthToken, removeUserData, canModerate, getMyProfile } from '@/lib/strapiAuth';
 
 export default function Header() {
   const router = useRouter();
@@ -10,50 +12,9 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState('Danh mục');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [balance, setBalance] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    const token = getAuthToken();
-    const userData = getUserData();
-    const role = getUserRole();
-    if (token && userData) {
-      setIsLoggedIn(true);
-      setUser(userData);
-      setUserRole(role);
-      
-      // Fetch latest profile to get real-time balance and role
-      getMyProfile().then(profile => {
-        if (profile) {
-          setBalance(profile.balance !== undefined ? profile.balance : 0);
-          // Sync storage
-          const updatedUser = { ...userData, balance: profile.balance };
-          localStorage.setItem('strapi_user', JSON.stringify(updatedUser));
-        }
-      }).catch(err => {
-        console.error('Error fetching profile in Header:', err);
-      });
-    } else {
-      setIsLoggedIn(false);
-      setUser(null);
-      setUserRole(null);
-      setBalance(0);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    removeAuthToken();
-    removeUserData();
-    setIsLoggedIn(false);
-    setUser(null);
-    setUserRole(null);
-    setBalance(0);
-    router.push('/');
-  };
 
   const categories = [
     'Danh mục',
@@ -67,11 +28,46 @@ export default function Header() {
     'Đồ ăn, thực phẩm, và các loại khác',
   ];
 
+  useEffect(() => {
+    // Check authentication status on mount
+    const token = getAuthToken();
+    const userData = getUserData();
+    if (token && userData) {
+      setIsAuthenticated(true);
+      setUser(userData);
+      
+      // Fetch user profile to get balance
+      fetchBalance();
+    }
+  }, []);
+
+  const fetchBalance = async () => {
+    try {
+      const profileData = await getMyProfile();
+      if (profileData) {
+        setBalance(profileData.balance || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    removeAuthToken();
+    removeUserData();
+    setIsAuthenticated(false);
+    setUser(null);
+    router.push('/');
+  };
+
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
+
+  const { cartItems } = useCart();
+  const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <header className="bg-yellow-400 sticky top-0 z-50 shadow-md">
@@ -85,46 +81,27 @@ export default function Header() {
             <span className="hover:text-gray-900 cursor-pointer">Bất động sản</span>
             <span className="hover:text-gray-900 cursor-pointer">Đồ Điện Tử</span>
           </div>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4">
             <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
             <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
             <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
-            {isLoggedIn ? (
-              <>
-                <span className="hover:text-gray-900 cursor-pointer font-semibold flex items-center gap-1">
-                  Xin chào, {user?.username || user?.email}
-                  {userRole && (
-                    <span className="text-xs bg-yellow-200 px-2 py-0.5 rounded text-gray-800">
-                      {userRole === 'moderator' ? 'Kiểm duyệt' : 'Người dùng'}
-                    </span>
-                  )}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Xin chào, {user?.username || 'User'}</span>
+                <span 
+                  className="text-green-600 font-semibold cursor-pointer hover:text-green-700"
+                  onClick={() => router.push('/wallet')}
+                >
+                  💰 {balance.toLocaleString('vi-VN')}đ
                 </span>
-                {userRole !== 'moderator' && userRole !== 'admin' && (
-                  <span 
-                    onClick={() => router.push('/wallet')}
-                    className="bg-black text-yellow-400 hover:bg-gray-800 px-2 py-1 rounded cursor-pointer font-bold flex items-center gap-1 transition"
-                    title="Ví cá nhân"
-                  >
-                    🪙 {(balance ?? 0).toLocaleString('vi-VN')}đ
-                  </span>
-                )}
-                {userRole === 'moderator' && (
-                  <button
-                    onClick={() => router.push('/moderation')}
-                    className="hover:text-gray-900 cursor-pointer font-semibold bg-white text-gray-800 px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 flex items-center gap-1"
-                  >
-                    📋 Kiểm duyệt
-                  </button>
-                )}
                 <button
                   onClick={handleLogout}
-                  className="hover:text-gray-900 cursor-pointer font-semibold text-gray-700 hover:underline ml-2"
+                  className="hover:text-gray-900 cursor-pointer font-semibold"
                 >
                   Đăng xuất
                 </button>
-              </>
+              </div>
             ) : (
-
               <>
                 <button
                   onClick={() => router.push('/auth/login')}
@@ -208,29 +185,34 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            {isMounted && userRole === 'moderator' ? (
+            {isAuthenticated && canModerate() ? (
               <button
                 onClick={() => router.push('/moderation')}
-                className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
+                className="bg-red-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-red-600 ml-4"
               >
-                📋 Kiểm duyệt tin
+                🔍 Kiểm duyệt
               </button>
-            ) : isMounted ? (
+            ) : (
               <button
                 onClick={() => router.push('/post')}
                 className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
               >
                 + Đăng tin
               </button>
-            ) : null}
+            )}
           </div>
 
           {/* Location Bar */}
-          <div className="flex items-center gap-4 text-sm text-gray-700">
+          {/* <div className="flex items-center gap-4 text-sm text-gray-700">
             <span className="flex items-center gap-2">
               📍 Chọn khu vực ▼
             </span>
-          </div>
+          </div> */}
+
+          {/* Cart */}
+          <nav>
+              <Link href="/cart">🛒 Giỏ hàng ({totalQty})</Link>
+          </nav>
         </div>
       </div>
     </header>

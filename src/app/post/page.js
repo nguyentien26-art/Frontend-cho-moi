@@ -4,14 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/global_components/Header';
 import Footer from '@/global_components/Footer';
-import { getAuthToken, canPost, createProduct, getUserData, getMyProfile } from '@/lib/strapiAuth';
+import { getAuthToken, canPost, createProduct, getUserData } from '@/lib/strapiAuth';
 
 export default function CreatePost() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [userBalance, setUserBalance] = useState(null);
-  const [insufficientBalance, setInsufficientBalance] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -48,7 +46,7 @@ export default function CreatePost() {
     'Đồ ăn, thực phẩm, và các loại khác': 'do-an, thuc-pham, va-cac-loai-khac',
   };
   const [selectedImages, setSelectedImages] = useState([]);
-
+  const [isChecking, setIsChecking] = useState(true);
   useEffect(() => {
     const token = getAuthToken();
     if (!token || !canPost()) {
@@ -56,7 +54,6 @@ export default function CreatePost() {
       return;
     }
 
-    // Tự động lấy tên người bán từ user đăng nhập
     const userData = getUserData();
     if (userData) {
       setFormData(prev => ({
@@ -65,22 +62,8 @@ export default function CreatePost() {
       }));
     }
 
-    // Kiểm tra số dư người dùng
-    getMyProfile().then(profile => {
-      if (profile) {
-        setUserBalance(profile.balance);
-        const userRole = profile.role?.type || profile.role?.name;
-        const isModeratorOrAdmin = userRole === 'moderator' || userRole === 'admin';
-        
-        if (!isModeratorOrAdmin && (profile.balance || 0) < 5000) {
-          setInsufficientBalance(true);
-          setError('Số dư tài khoản của bạn không đủ để đăng tin (Cần tối thiểu 5,000đ). Vui lòng nạp thêm tiền.');
-        }
-      }
-    }).catch(err => {
-      console.error('Lỗi khi kiểm tra số dư:', err);
-    });
-  }, []);
+    setIsChecking(false); // Đã kiểm tra xong và hợp lệ!
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -295,23 +278,13 @@ export default function CreatePost() {
 
             {/* Nút Submit */}
             <div className="pt-2">
-              {insufficientBalance ? (
-                <button
-                  type="button"
-                  onClick={() => router.push('/wallet')}
-                  className="w-full bg-red-500 text-white font-bold text-lg py-4 rounded-md hover:bg-red-600 transition shadow-md active:transform active:scale-[0.99] flex items-center justify-center gap-2"
-                >
-                  💳 Nạp tiền ngay để đăng tin (Phí: 5,000đ)
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-yellow-400 text-gray-800 font-bold text-lg py-4 rounded-md hover:bg-yellow-500 transition shadow-md active:transform active:scale-[0.99] disabled:opacity-50"
-                >
-                  {loading ? 'Đang đăng...' : '🚀 Đăng tin ngay (Phí: 5,000đ)'}
-                </button>
-              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-yellow-400 text-gray-800 font-bold text-lg py-4 rounded-md hover:bg-yellow-500 transition shadow-md active:transform active:scale-[0.99] disabled:opacity-50"
+              >
+                {loading ? 'Đang đăng...' : '🚀 Đăng tin ngay'}
+              </button>
             </div>
           </form>
         </div>
