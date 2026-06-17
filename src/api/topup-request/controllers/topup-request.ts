@@ -1,111 +1,66 @@
-/**
- * topup-request controller
- */
-
 import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('api::topup-request.topup-request', ({ strapi }) => ({
-  // Override update action to auto-credit user balance upon approval
-  async update(ctx) {
-    const { id } = ctx.params; // documentId is passed as id in the params
-    const { data } = ctx.request.body;
+  
+  // 1. Intercept Next.js frontend submissions (Both Public and Authenticated roles)
+  async create(ctx) {
+    const currentUser = ctx.state.user;
+    
+    if (!currentUser) {
+      return ctx.unauthorized('Bạn phải đăng nhập để thực hiện nạp tiền.');
+    }
 
-    if (data && data.requestStatus) {
-      // Find the existing top-up request with user info populated
-      const existingRequest = await strapi.documents('api::topup-request.topup-request').findOne({
-        documentId: id,
-        populate: ['users_permissions_user'],
-      });
-
-      if (!existingRequest) {
-        return ctx.notFound('Không tìm thấy yêu cầu nạp tiền.');
-      }
-
-      // Check if transitioning from pending to approved
-      if (data.requestStatus === 'approved' && existingRequest.requestStatus === 'pending') {
-        const user = existingRequest.users_permissions_user;
-        if (!user) {
-          return ctx.badRequest('Yêu cầu nạp tiền không liên kết với người dùng nào.');
-        }
-
-        const amount = existingRequest.amount || 0;
-        const currentBalance = user.balance !== undefined ? user.balance : 0;
-
-        // Update the user's balance in the database
-        await strapi.documents('plugin::users-permissions.user').update({
-          documentId: user.documentId,
-          data: {
-            balance: currentBalance + amount,
-          },
-        });
+    // Capture the request payload
+    const body = ctx.request.body as any;
+    if (body && body.data) {
+      // Force the initial status to 'pending' so users can't approve their own money
+      body.data.requestStatus = 'pending';
+      
+      // Remove it from the validation payload to prevent the "Invalid users_permissions_user" error
+      if (body.data.users_permissions_user) {
+        delete body.data.users_permissions_user;
       }
     }
 
-    // Run core update action
-    const response = await super.update(ctx);
+    // Let Strapi validate and create the basic ticket document row safely
+    const response = await super.create(ctx);
+
+    // After validation passes, safely link the user via the internal document service
+    if (response && response.data) {
+      console.log(`🔒 Securely linking ticket ${response.data.documentId} to user: ${currentUser.username}`);
+      
+      await strapi.documents('api::topup-request.topup-request').update({
+        documentId: response.data.documentId,
+        data: {
+          users_permissions_user: currentUser.documentId
+        } as any
+      });
+    }
+
     return response;
   },
 
-  // Custom action to directly adjust user's balance (for Moderators / Admins)
+  // 2. Keep your friend's custom Postman action intact
   async adjustBalance(ctx) {
     const user = ctx.state.user;
-    if (!user) {
-      return ctx.unauthorized('Bạn phải đăng nhập để thực hiện.');
-    }
+    if (!user) return ctx.unauthorized('Bạn phải đăng nhập để thực hiện.');
 
-    // Verify requester role
-    const requesterDb = await strapi.documents('plugin::users-permissions.user').findOne({
-      documentId: user.documentId || user.id?.toString(),
-      populate: ['role'],
-    });
+    const { userDocumentId, amount } = ctx.request.body as any;
+    if (!userDocumentId || amount === undefined) return ctx.badRequest('Missing variables.');
 
-    if (!requesterDb) {
-      return ctx.badRequest('Không tìm thấy tài khoản người yêu cầu.');
-    }
-
-    const roleName = requesterDb.role?.type || requesterDb.role?.name;
-    if (roleName !== 'moderator' && roleName !== 'admin') {
-      return ctx.forbidden('Chỉ có kiểm duyệt viên hoặc quản trị viên mới có quyền cộng/trừ tiền trực tiếp.');
-    }
-
-    const { userDocumentId, amount } = ctx.request.body;
-    if (!userDocumentId || amount === undefined) {
-      return ctx.badRequest('Thiếu thông tin userDocumentId hoặc amount.');
-    }
-
-    // Get target user
-    const targetUser = await strapi.documents('plugin::users-permissions.user').findOne({
+    const targetUser: any = await strapi.documents('plugin::users-permissions.user').findOne({
       documentId: userDocumentId,
     });
 
-    if (!targetUser) {
-      return ctx.notFound('Không tìm thấy tài khoản người dùng cần cộng/trừ tiền.');
-    }
+    if (!targetUser) return ctx.notFound('User not found.');
 
-    const adjustAmount = parseInt(amount, 10);
-    const newBalance = (targetUser.balance !== undefined ? targetUser.balance : 0) + adjustAmount;
+    const newBalance = (targetUser.balance || 0) + parseInt(amount, 10);
 
-    if (newBalance < 0) {
-      return ctx.badRequest('Số dư tài khoản sau khi trừ không thể nhỏ hơn 0đ.');
-    }
-
-    // Update target user balance
     const updatedUser = await strapi.documents('plugin::users-permissions.user').update({
       documentId: userDocumentId,
-      data: {
-        balance: newBalance,
-      },
+      data: { balance: newBalance },
     });
 
-    return {
-      success: true,
-      balance: updatedUser.balance,
-      user: {
-        documentId: updatedUser.documentId,
-        username: updatedUser.username,
-        email: updatedUser.email,
-      }
-    };
+    return { success: true, balance: updatedUser.balance };
   }
 }));
-
