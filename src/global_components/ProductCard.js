@@ -1,12 +1,14 @@
+"use client";
+
 import Link from 'next/link';
 import { useCart } from "@/context/CartContext";
 
 
 export default function ProductCard({ product }) {
   // Xử lý đường dẫn ảnh từ Strapi, nếu không có ảnh thì hiển thị ảnh mặc định
-  const imageUrl = product.image?.[0]?.url
-    ? `http://localhost:1337${product.image[0].url}`
-    : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="Arial" font-size="20" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EChưa có ảnh%3C/text%3E%3C/svg%3E';
+  const imageUrl = product.image?.[0]?.url 
+    ? `http://localhost:1337${product.image[0].url}` 
+    : null;
 
   // Format giá tiền sang chuẩn VNĐ
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
@@ -21,11 +23,20 @@ export default function ProductCard({ product }) {
       <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden border border-gray-100 cursor-pointer h-full flex flex-col">
         {/* Khu vực ảnh */}
         <div className="aspect-video relative overflow-hidden bg-gray-100">
-          <img 
-            src={imageUrl} 
-            alt={product.name} 
-            className="w-full h-full object-cover"
-          />
+          {imageUrl ? (
+            <img 
+              src={imageUrl} 
+              alt={product.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div className="hidden w-full h-full items-center justify-center bg-gray-200 text-gray-500 text-sm">
+            Chưa có ảnh
+          </div>
         </div>
         
         {/* Khu vực thông tin */}

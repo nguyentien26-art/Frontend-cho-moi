@@ -18,9 +18,8 @@ export default function HomePage() {
 
   const fetchProducts = async () => {
     try {
-      // Chỉ hiển thị sản phẩm đã được duyệt (productStatus = '     approved (đã duyệt)')
-      const res = await fetch('http://localhost:1337/api/products?populate=*', {
-        cache: 'no-store'
+      const res = await fetch('http://localhost:1337/api/products?populate=*[productStatus][$eq]=approved', {
+        cache: 'no-store' 
       });
       if (!res.ok) {
         console.error("Lỗi fetch:", res.status);
@@ -28,9 +27,7 @@ export default function HomePage() {
         return;
       }
       const json = await res.json();
-      // Filter client-side: chỉ hiển thị sản phẩm có productStatus = '     approved (đã duyệt)'
-      const filteredProducts = (json.data || []).filter(p => p.productStatus === '     approved (đã duyệt)');
-      setProducts(filteredProducts);
+      setProducts(json.data || []);
     } catch (error) {
       console.error("Lỗi:", error);
       setProducts([]);
@@ -68,9 +65,13 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
-              <ProductCard key={product.documentId} product={product} />
-            ))}
+            {products.map((product) => {
+              const status = product?.productStatus;
+              
+              if (status !== 'approved') return null;
+
+              return <ProductCard key={product.id} product={product} />;
+            })}
           </div>
         )}
       </main>

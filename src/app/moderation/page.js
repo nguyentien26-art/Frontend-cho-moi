@@ -18,7 +18,7 @@ export default function ModerationPage() {
     if (!token || !canModerate()) {
       router.push('/');
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     fetchProducts();
@@ -27,13 +27,14 @@ export default function ModerationPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError('');
       let filters = {};
       if (filter !== 'all') {
-        // Map filter value to actual productStatus value in Strapi
+        // Optimized to match your clean database strings exactly
         const statusMap = {
-          'pending': '     pending (chờ duyệt)',
-          'approved': '     approved (đã duyệt)',
-          'rejected': '     rejected (đã từ chối)',
+          'pending': 'pending',
+          'approved': 'approved',
+          'rejected': 'rejected',
         };
         filters = { 'filters[productStatus][$eq]': statusMap[filter] || filter };
       }
@@ -52,8 +53,7 @@ export default function ModerationPage() {
 
   const handleApprove = async (productId) => {
     try {
-      // Sử dụng documentId thay vì id cho Strapi v5
-      await updateProduct(productId, { productStatus: '     approved (đã duyệt)' });
+      await updateProduct(productId, { productStatus: 'approved' });
       alert('Đã duyệt tin thành công!');
       fetchProducts();
     } catch (err) {
@@ -63,8 +63,7 @@ export default function ModerationPage() {
 
   const handleReject = async (productId) => {
     try {
-      // Sử dụng documentId thay vì id cho Strapi v5
-      await updateProduct(productId, { productStatus: '     rejected (đã từ chối)' });
+      await updateProduct(productId, { productStatus: 'rejected' });
       alert('Đã từ chối tin thành công!');
       fetchProducts();
     } catch (err) {
@@ -74,27 +73,19 @@ export default function ModerationPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending':
-        return 'Chờ duyệt';
-      case 'approved':
-        return 'Đã duyệt';
-      case 'rejected':
-        return 'Đã từ chối';
-      default:
-        return status;
+      case 'pending': return 'Chờ duyệt';
+      case 'approved': return 'Đã duyệt';
+      case 'rejected': return 'Đã từ chối';
+      default: return status;
     }
   };
 
@@ -108,7 +99,7 @@ export default function ModerationPage() {
             📋 Kiểm duyệt tin đăng
           </h1>
 
-          {/* Filter */}
+          {/* Filter Navigation */}
           <div className="mb-6 flex gap-4">
             <button
               onClick={() => setFilter('pending')}
@@ -159,7 +150,7 @@ export default function ModerationPage() {
             </div>
           ) : (
             <>
-              {/* Products List */}
+              {/* Products List Layout */}
               {products.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Không có tin nào để hiển thị
@@ -172,26 +163,25 @@ export default function ModerationPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold text-gray-800">
-                              {product.attributes?.name || product.name || 'Không có tiêu đề'}
+                              {product.name || 'Không có tiêu đề'}
                             </h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(product.attributes?.productStatus || product.productStatus)}`}>
-                              {getStatusText(product.attributes?.productStatus || product.productStatus)}
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(product.productStatus)}`}>
+                              {getStatusText(product.productStatus)}
                             </span>
                           </div>
                           <p className="text-gray-600 mb-2">
-                            Giá: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.attributes?.price || product.price || 0)}
+                            Giá: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price || 0)}
                           </p>
                           <p className="text-gray-600 mb-2">
-                            Danh mục: {product.attributes?.categories?.name || product.categories?.name || 'Không có danh mục'}
+                            Danh mục: {product.categories?.name || 'Không có danh mục'}
                           </p>
                           <p className="text-gray-600 mb-2">
-                            Khu vực: {product.attributes?.location || product.location || 'Không có khu vực'}
+                            Khu vực: {product.location || 'Không có khu vực'}
                           </p>
                           <p className="text-gray-500 text-sm">
                             {(() => {
-                              const desc = product.attributes?.description || product.description;
+                              const desc = product.description;
                               if (!desc) return 'Không có mô tả';
-                              // Nếu description là Rich text structure, extract text content
                               if (Array.isArray(desc)) {
                                 return desc.map(block => {
                                   if (block.children) {
@@ -200,12 +190,12 @@ export default function ModerationPage() {
                                   return '';
                                 }).join('') || 'Không có mô tả';
                               }
-                              // Nếu description là string, hiển thị trực tiếp
                               return desc;
                             })()}
                           </p>
                         </div>
-                        {(product.attributes?.productStatus === '     pending (chờ duyệt)' || product.productStatus === '     pending (chờ duyệt)') ? (
+                        
+                        {product.productStatus === 'pending' ? (
                           <div className="flex gap-2 ml-4">
                             <button
                               onClick={() => handleApprove(product.documentId)}

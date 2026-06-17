@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { registerUser } from '@/lib/strapiAuth';
+import { registerUser, loginUser, saveAuthToken, saveUserData } from '@/lib/strapiAuth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -32,14 +32,26 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const data = await registerUser({
+      console.log('Signup attempt:', { fullName, email, password });
+      
+      // Đăng ký user mới
+      await registerUser({
         username: fullName,
-        email: email,
-        password: password,
+        email,
+        password
       });
-
-      // Redirect to login with success message
-      router.push('/auth/login?registered=true');
+      
+      // Sau khi đăng ký thành công, tự động đăng nhập
+      const loginResponse = await loginUser({ email, password });
+      
+      // Lưu token và user data
+      saveAuthToken(loginResponse.jwt);
+      saveUserData(loginResponse.user);
+      
+      console.log('Signup and login successful:', loginResponse.user);
+      
+      // Redirect về home page
+      router.push('/');
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
       console.error(err);

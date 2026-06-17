@@ -16,11 +16,9 @@ export async function registerUser(userData) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.error?.message || data.message || 'Đăng ký thất bại');
     }
-
     return data;
   } catch (error) {
     throw error;
@@ -29,7 +27,6 @@ export async function registerUser(userData) {
 
 export async function loginUser(credentials) {
   try {
-    // Strapi v5 uses /api/auth/local for login
     const response = await fetch(`${STRAPI_URL}/api/auth/local`, {
       method: 'POST',
       headers: {
@@ -42,28 +39,18 @@ export async function loginUser(credentials) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.error?.message || data.message || 'Đăng nhập thất bại');
     }
 
-    // Log để debug
-    console.log('Login response:', data);
-    console.log('User object:', data.user);
-
-    // Strapi v5 không trả về role mặc định
-    // Sử dụng email để xác định role tạm thời
     const email = data.user.email;
-    let roleType = 'authenticated'; // Mặc định là user thường
+    let roleType = 'authenticated';
 
-    // Cấu hình email moderator
     if (email === 'moderator@gmail.com') {
       roleType = 'moderator';
     }
 
     data.user.role = { type: roleType };
-    console.log('User role determined by email:', data.user.role);
-
     return data;
   } catch (error) {
     throw error;
@@ -106,8 +93,6 @@ export function getUserData() {
 export function getUserRole() {
   const user = getUserData();
   if (user && user.role) {
-    // Strapi v5 trả về role với cấu trúc khác nhau
-    // Có thể là user.role.type, user.role.name, hoặc user.role.id
     return user.role.type || user.role.name || user.role.id?.toString();
   }
   return null;
@@ -115,14 +100,11 @@ export function getUserRole() {
 
 export function canPost() {
   const token = getAuthToken();
-  // Tất cả user đã đăng nhập đều có thể đăng tin
   return !!token;
 }
 
 export function canModerate() {
   const role = getUserRole();
-  // Log để debug
-  console.log('Current role:', role);
   return role === 'moderator';
 }
 
@@ -137,11 +119,9 @@ export function removeUserData() {
   }
 }
 
-// Hàm set role thủ công cho testing
 export function setUserRole(role) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('user_role', role);
-    // Cập nhật user data trong localStorage
     const user = getUserData();
     if (user) {
       user.role = { type: role };
@@ -160,11 +140,10 @@ export function getUserRoleFromStorage() {
 export async function createProduct(productData) {
   const token = getAuthToken();
   try {
-    // Nếu có category, cần lấy category ID từ Strapi
     let dataToSend = { ...productData };
 
+    // Handle relational category parsing dynamically
     if (productData.category) {
-      // Fetch category ID từ Strapi
       const categoryResponse = await fetch(`${STRAPI_URL}/api/categories?filters[name][$eq]=${encodeURIComponent(productData.category)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -172,43 +151,37 @@ export async function createProduct(productData) {
       });
 
       const categoryData = await categoryResponse.json();
+      // v5 flat list validation
+      const categoriesList = categoryData.data || categoryData;
 
-      if (categoryResponse.ok && categoryData.data && categoryData.data.length > 0) {
-        // Gửi category ID thay vì tên
-        dataToSend.categories = categoryData.data[0].id;
+      if (categoryResponse.ok && categoriesList && categoriesList.length > 0) {
+        dataToSend.categories = categoriesList[0].id;
         delete dataToSend.category;
       }
     }
 
-    // Convert description to Rich text block structure cho Strapi v5
-    if (productData.description) {
+    // Standard block format compilation for rich text
+    if (productData.description && !Array.isArray(productData.description)) {
       dataToSend.description = [
         {
           type: 'paragraph',
-          children: [
-            {
-              type: 'text',
-              text: productData.description
-            }
-          ]
+          children: [{ type: 'text', text: productData.description }]
         }
       ];
     }
 
-    // Upload ảnh nếu có
+    // FIXED: Image Multi-part Upload Pipeline
     let imageIds = [];
     if (productData.images && productData.images.length > 0) {
       for (const imageFile of productData.images) {
         const formData = new FormData();
         formData.append('files', imageFile);
-        formData.append('field', 'image');
-        formData.append('refId', 'upload');
-        formData.append('ref', 'plugin::upload.file');
 
         const uploadResponse = await fetch(`${STRAPI_URL}/api/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
+            // CRITICAL: NO 'Content-Type' header here. The browser needs to construct it naturally!
           },
           body: formData,
         });
@@ -216,16 +189,18 @@ export async function createProduct(productData) {
         const uploadData = await uploadResponse.json();
         if (uploadResponse.ok && uploadData && uploadData.length > 0) {
           imageIds.push(uploadData[0].id);
+        } else {
+          console.error("Failed to upload image file asset:", uploadData);
         }
       }
-      dataToSend.image = imageIds;
+      dataToSend.images = imageIds; 
     }
-
+    dataToSend.image = imageIds;
     delete dataToSend.images;
-
-    // Tạm thời bỏ productStatus để xem có bắt buộc không
-    // Nếu Strapi có default value, nó sẽ tự set
-    // dataToSend.productStatus = 'pending';
+    // Explicit fallback for moderation system compliance
+    if (!dataToSend.productStatus) {
+      dataToSend.productStatus = 'pending';
+    }
 
     const response = await fetch(`${STRAPI_URL}/api/products`, {
       method: 'POST',
@@ -239,10 +214,8 @@ export async function createProduct(productData) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-      console.error('Strapi error:', data);
-      console.error('Error details:', JSON.stringify(data, null, 2));
+      console.error('Strapi creation trace details:', JSON.stringify(data, null, 2));
       throw new Error(data.error?.message || data.message || 'Đăng tin thất bại');
     }
 
@@ -256,7 +229,6 @@ export async function createProduct(productData) {
 export async function getProducts(filters = {}) {
   try {
     const queryString = new URLSearchParams(filters).toString();
-    // Thêm populate=* để lấy đầy đủ thông tin bao gồm categories
     const response = await fetch(`${STRAPI_URL}/api/products?${queryString}&populate=*`, {
       headers: {
         'Content-Type': 'application/json',
@@ -264,11 +236,9 @@ export async function getProducts(filters = {}) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.error?.message || data.message || 'Lỗi khi lấy danh sách tin');
     }
-
     return data;
   } catch (error) {
     throw error;
@@ -278,8 +248,6 @@ export async function getProducts(filters = {}) {
 export async function updateProduct(productId, productData) {
   const token = getAuthToken();
   try {
-    console.log('Updating product:', productId, 'with data:', productData);
-    // Strapi v5 dùng documentId thay vì id cho PUT endpoint
     const response = await fetch(`${STRAPI_URL}/api/products/${productId}`, {
       method: 'PUT',
       headers: {
@@ -292,16 +260,101 @@ export async function updateProduct(productId, productData) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-      console.error('Strapi update error:', data);
-      console.error('Error details:', JSON.stringify(data, null, 2));
       throw new Error(data.error?.message || data.message || 'Cập nhật tin thất bại');
     }
-
     return data;
   } catch (error) {
-    console.error('Update product error:', error);
     throw error;
   }
 }
+
+export async function getMyProfile() {
+  const token = getAuthToken();
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/users/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || data.message || 'Lỗi khi lấy thông tin người dùng');
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createTopupRequest(amount, transactionId, note) {
+  const token = getAuthToken();
+  const user = getUserData();
+  try {
+    const response = await fetch(`${STRAPI_URL}/api/topup-requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        data: {
+          amount: parseInt(amount, 10),
+          transactionId,
+          note,
+          users_permissions_user: user.id,
+          requestStatus: 'pending',
+        },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || data.message || 'Lỗi khi tạo yêu cầu nạp tiền');
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export const getTopupRequests = async (userId) => {
+  try {
+    const token = getAuthToken();
+    if (!token) return { data: [] };
+
+    // Fetch the raw history data cleanly without complex deep backend filters
+    const res = await fetch(`http://localhost:1337/api/topup-requests?sort=createdAt:desc`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!res.ok) {
+      console.warn(`Strapi Topup API endpoint returned status: ${res.status}`);
+      return { data: [] };
+    }
+    
+    const json = await res.json();
+    const rawData = json?.data || [];
+
+    // Filter by the logged-in user's ID manually right here on the frontend
+    if (userId) {
+      return {
+        data: rawData.filter(item => {
+          // Check standard relational structures in Strapi v5 flat data blocks
+          const itemUserId = item.user?.id || item.userId || item.user;
+          return Number(itemUserId) === Number(userId);
+        })
+      };
+    }
+    
+    return { data: rawData };
+  } catch (error) {
+    console.error('getTopupRequests Error:', error);
+    return { data: [] };
+  }
+};

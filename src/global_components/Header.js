@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuthToken, getUserData, removeAuthToken, removeUserData, getUserRole, canModerate } from '@/lib/strapiAuth';
+import { useCart } from "@/context/CartContext";
+import Link from "next/link";
+import { getUserData, getAuthToken, removeAuthToken, removeUserData, canModerate, getMyProfile } from '@/lib/strapiAuth';
 
 export default function Header() {
   const router = useRouter();
@@ -10,35 +12,9 @@ export default function Header() {
   const [selectedCategory, setSelectedCategory] = useState('Danh mục');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    const token = getAuthToken();
-    const userData = getUserData();
-    const role = getUserRole();
-    if (token && userData) {
-      setIsLoggedIn(true);
-      setUser(userData);
-      setUserRole(role);
-    } else {
-      setIsLoggedIn(false);
-      setUser(null);
-      setUserRole(null);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    removeAuthToken();
-    removeUserData();
-    setIsLoggedIn(false);
-    setUser(null);
-    setUserRole(null);
-    router.push('/');
-  };
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [balance, setBalance] = useState(0);
 
   const categories = [
     'Danh mục',
@@ -52,11 +28,46 @@ export default function Header() {
     'Đồ ăn, thực phẩm, và các loại khác',
   ];
 
+  useEffect(() => {
+    // Check authentication status on mount
+    const token = getAuthToken();
+    const userData = getUserData();
+    if (token && userData) {
+      setIsAuthenticated(true);
+      setUser(userData);
+      
+      // Fetch user profile to get balance
+      fetchBalance();
+    }
+  }, []);
+
+  const fetchBalance = async () => {
+    try {
+      const profileData = await getMyProfile();
+      if (profileData) {
+        setBalance(profileData.balance || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    removeAuthToken();
+    removeUserData();
+    setIsAuthenticated(false);
+    setUser(null);
+    router.push('/');
+  };
+
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
+
+  const { cartItems } = useCart();
+  const totalQty = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <header className="bg-yellow-400 sticky top-0 z-50 shadow-md">
@@ -74,31 +85,22 @@ export default function Header() {
             <span className="hover:text-gray-900 cursor-pointer">♥️ Yêu thích</span>
             <span className="hover:text-gray-900 cursor-pointer">🔔 Thông báo</span>
             <span className="hover:text-gray-900 cursor-pointer">👤 Liên hệ</span>
-            {isLoggedIn ? (
-              <>
-                <span className="hover:text-gray-900 cursor-pointer font-semibold">
-                  Xin chào, {user?.username || user?.email}
-                  {userRole && (
-                    <span className="text-xs ml-2 bg-yellow-200 px-2 py-1 rounded">
-                      {userRole === 'moderator' ? 'Kiểm duyệt' : 'Người dùng'}
-                    </span>
-                  )}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Xin chào, {user?.username || 'User'}</span>
+                <span 
+                  className="text-green-600 font-semibold cursor-pointer hover:text-green-700"
+                  onClick={() => router.push('/wallet')}
+                >
+                  💰 {balance.toLocaleString('vi-VN')}đ
                 </span>
-                {userRole === 'moderator' && (
-                  <button
-                    onClick={() => router.push('/moderation')}
-                    className="hover:text-gray-900 cursor-pointer font-semibold"
-                  >
-                    📋 Kiểm duyệt
-                  </button>
-                )}
                 <button
                   onClick={handleLogout}
                   className="hover:text-gray-900 cursor-pointer font-semibold"
                 >
                   Đăng xuất
                 </button>
-              </>
+              </div>
             ) : (
               <>
                 <button
@@ -183,40 +185,34 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-2">
-              {/* Nút Giỏ Hàng Điều Hướng Đến /cart */}
+            {isAuthenticated && canModerate() ? (
               <button
-                onClick={() => router.push('/cart')}
-                className="p-2 text-2xl hover:bg-yellow-500 rounded-full transition flex items-center justify-center"
-                title="Giỏ hàng của bạn"
+                onClick={() => router.push('/moderation')}
+                className="bg-red-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-red-600 ml-4"
               >
-                🛍️ Giỏ Hàng
+                🔍 Kiểm duyệt
               </button>
-
-              {isMounted && userRole === 'moderator' ? (
-                <button
-                  onClick={() => router.push('/moderation')}
-                  className="bg-yellow-500 text-gray-700 px-5 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-2 white-space-nowrap"
-                >
-                  📋 Kiểm duyệt tin
-                </button>
-              ) : isMounted ? (
-                <button
-                  onClick={() => router.push('/post')}
-                  className="bg-yellow-500 text-gray-700 px-5 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-2 white-space-nowrap"
-                >
-                  + Đăng tin
-                </button>
-              ) : null}
-            </div>
+            ) : (
+              <button
+                onClick={() => router.push('/post')}
+                className="bg-yellow-500 text-gray-700 px-6 py-2 rounded-md font-semibold hover:bg-yellow-600 ml-4"
+              >
+                + Đăng tin
+              </button>
+            )}
           </div>
 
           {/* Location Bar */}
-          <div className="flex items-center gap-4 text-sm text-gray-700">
+          {/* <div className="flex items-center gap-4 text-sm text-gray-700">
             <span className="flex items-center gap-2">
               📍 Chọn khu vực ▼
             </span>
-          </div>
+          </div> */}
+
+          {/* Cart */}
+          <nav>
+              <Link href="/cart">🛒 Giỏ hàng ({totalQty})</Link>
+          </nav>
         </div>
       </div>
     </header>
