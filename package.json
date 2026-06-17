@@ -7,7 +7,7 @@
     "build": "strapi build",
     "console": "strapi console",
     "deploy": "strapi deploy",
-    "dev": "strapi develop",
+    "dev": "cross-env DATABASE_FILENAME=.tmp/data.db strapi develop",
     "develop": "strapi develop",
     "start": "strapi start",
     "strapi": "strapi",

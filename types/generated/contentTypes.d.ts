@@ -495,13 +495,9 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String;
     price: Schema.Attribute.Integer;
     productStatus: Schema.Attribute.Enumeration<
-      [
-        '     pending (ch\u1EDD duy\u1EC7t)',
-        '     approved (\u0111\u00E3 duy\u1EC7t)',
-        '     rejected (\u0111\u00E3 t\u1EEB ch\u1ED1i)',
-      ]
+      ['pending', 'approved', 'rejected']
     > &
-      Schema.Attribute.DefaultTo<'     pending (ch\u1EDD duy\u1EC7t)'>;
+      Schema.Attribute.DefaultTo<'pending'>;
     publishedAt: Schema.Attribute.DateTime;
     seller: Schema.Attribute.String;
     type: Schema.Attribute.String;

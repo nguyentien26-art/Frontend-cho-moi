@@ -50,11 +50,11 @@
     },
     "productStatus": {
       "type": "enumeration",
-      "default": "     pending (chờ duyệt)",
+      "default": "pending",
       "enum": [
-        "     pending (chờ duyệt)",
-        "     approved (đã duyệt)",
-        "     rejected (đã từ chối)"
+        "pending",
+        "approved",
+        "rejected"
       ]
     }
   }
